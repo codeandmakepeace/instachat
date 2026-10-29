@@ -16,7 +16,7 @@ const bricolage = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   title: "InstaChat",
-  description: "Automação de DMs do Instagram a partir de comentários e stories.",
+  description: "Instagram DM automation triggered by comments and story replies.",
 };
 
 export default function RootLayout({
@@ -26,8 +26,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="pt-BR"
-      className={`${jakarta.variable} ${bricolage.variable} h-full`}
+      lang="en"
+      className={jakarta.variable + " " + bricolage.variable + " h-full"}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
