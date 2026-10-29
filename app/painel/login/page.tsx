@@ -14,15 +14,15 @@ export default async function LoginPage({
         <div className="ig-glow pointer-events-none absolute inset-0" />
         <div className="relative">
           <h1 className="font-display text-2xl font-bold tracking-tight text-[#262626]">
-            Entrar no painel
+            Sign in to InstaChat
           </h1>
           <p className="mt-1 text-sm text-[#737373]">
-            Digite a senha do painel para continuar.
+            Enter your dashboard password to continue.
           </p>
 
           {sp.error ? (
             <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
-              Senha incorreta. Tente de novo.
+              Incorrect password. Please try again.
             </p>
           ) : null}
 
@@ -31,7 +31,7 @@ export default async function LoginPage({
             <input
               type="password"
               name="password"
-              placeholder="Senha"
+              placeholder="Password"
               autoFocus
               className="w-full rounded-lg border border-[#dbdbdb] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-ig-blue focus:ring-2 focus:ring-ig-blue/20"
             />
@@ -39,7 +39,7 @@ export default async function LoginPage({
               type="submit"
               className="btn-ig w-full rounded-lg px-4 py-2.5 text-sm font-semibold"
             >
-              Entrar
+              Sign in
             </button>
           </form>
         </div>
