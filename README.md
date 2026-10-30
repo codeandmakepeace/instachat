@@ -54,12 +54,15 @@ Running, connected to a real Instagram account.
 
 A webhook ingests `comments`/`messages` events and validates the
 `X-Hub-Signature-256` HMAC over the raw body. Matches are enqueued; a worker
-drains the queue and sends via the **Instagram API with Instagram Login**
-(`graph.instagram.com`, v25.0 — **no Facebook Page required**).
+drains the queue and sends via the **Instagram API with Unified Login**
+(`graph.facebook.com`, v26.0). Meta's Facebook Login for Business configuration
+returns a business system-user token for the Instagram assets shared by the user.
 
 Since Vercel's free tier has no minute‑level cron, **Supabase `pg_cron` +
-`pg_net`** hit the drain endpoint every minute and refresh the 60‑day token
-weekly. The webhook also triggers a drain via Next.js `after()` for near‑instant
+`pg_net`** hit the drain endpoint every minute. Unified Login system-user tokens
+expire according to the selected Meta configuration; the old Instagram token
+refresh endpoint does not apply, so reconnect when the configured token expires.
+The webhook also triggers a drain via Next.js `after()` for near‑instant
 sends.
 
 ```mermaid
@@ -136,14 +139,17 @@ After the first deploy, set `APP_URL` to your production URL
 > `npm run dev` and expose it with a tunnel like **ngrok** (`ngrok http 3000`) —
 > good for trying it out, but the tunnel lives only while your machine is on.
 
-### 5. Meta app (Instagram API with Instagram Login)
+### 5. Meta app (Instagram API with Unified Login)
 
 1. At [developers.facebook.com](https://developers.facebook.com), create an app
-   (**Business** type) and add the **Instagram** product →
-   *Set up Instagram API with Instagram login*.
-2. Copy the **Instagram App ID** and **App Secret** into Vercel as
-   `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`; redeploy.
-3. **OAuth redirect URI:** `https://YOUR_APP/api/oauth/callback`
+   with the **Manage messaging & content on Instagram** use case and connect
+   it to a business portfolio. Create a Facebook Login for Business
+   configuration with the Instagram assets and permissions the app needs.
+2. Set the Meta App ID and App Secret in Vercel as `META_APP_ID` and
+   `META_APP_SECRET` (or retain the legacy `INSTAGRAM_APP_ID` and
+   `INSTAGRAM_APP_SECRET` names). Set `INSTAGRAM_CONFIG_ID` to your configuration
+   ID if you are not using this repository's preconfigured Meta app.
+3. Register **OAuth redirect URI:** `https://YOUR_APP/api/oauth/callback`
 4. **Webhook:** callback URL `https://YOUR_APP/api/webhook`, verify token =
    your `WEBHOOK_VERIFY_TOKEN`, subscribe to `comments` and `messages`.
 5. Add your Instagram username as a **tester** (App roles) and accept the invite
@@ -156,7 +162,8 @@ After the first deploy, set `APP_URL` to your production URL
 
 Edit [`supabase/cron.sql`](supabase/cron.sql), replacing `__APP_URL__` and
 `__CRON_SECRET__`, then run it in the Supabase SQL Editor. This drains the queue
-every minute and refreshes the token weekly.
+every minute. The weekly refresh schedule from older installs is no longer
+needed; remove any existing `instachat-refresh` job in Supabase after migrating.
 
 ### 7. Connect & test
 

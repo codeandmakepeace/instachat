@@ -35,20 +35,4 @@ select cron.schedule(
   $$
 );
 
--- Renovar o token longo toda segunda-feira 03:00 UTC.
-select cron.schedule(
-  'instachat-refresh',
-  '0 3 * * 1',
-  $$
-    select net.http_post(
-      url     := '__APP_URL__/api/cron/refresh',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer __CRON_SECRET__'
-      ),
-      body    := '{}'::jsonb
-    );
-  $$
-);
-
 -- Conferir os agendamentos: select * from cron.job;

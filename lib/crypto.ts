@@ -22,7 +22,7 @@ export function isValidSignature(
   }
 
   const provided = signatureHeader.slice("sha256=".length);
-  const expected = createHmac("sha256", env.instagramAppSecret)
+  const expected = createHmac("sha256", env.metaAppSecret)
     .update(rawBody, "utf8")
     .digest("hex");
 

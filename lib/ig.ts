@@ -2,24 +2,17 @@ import "server-only";
 import { env } from "./env";
 
 /**
- * Cliente da API "Instagram com Login do Instagram".
+ * Cliente da Instagram API com Unified Login.
  *
- * Base de dados/mensagens: https://graph.instagram.com/v25.0
- * OAuth (autorização e troca do code): instagram.com / api.instagram.com
+ * API: https://graph.facebook.com/v26.0
+ * OAuth: Facebook Login for Business with an Instagram-asset configuration.
  *
  * Não precisa de página do Facebook. O client_id do OAuth é o
- * "ID do app do Instagram" (env.instagramAppId).
+ * Meta App ID and app secret (legacy env names remain supported).
  */
 
-export const API_VERSION = "v25.0";
-export const GRAPH_BASE = `https://graph.instagram.com/${API_VERSION}`;
-
-// Escopos que o app pede no login.
-const SCOPES = [
-  "instagram_business_basic",
-  "instagram_business_manage_messages",
-  "instagram_business_manage_comments",
-].join(",");
+export const API_VERSION = "v26.0";
+export const GRAPH_BASE = `https://graph.facebook.com/${API_VERSION}`;
 
 // -------------------------------------------------------------------------
 // Tipos das mensagens que sabemos enviar
@@ -91,58 +84,28 @@ async function parse<T>(res: Response): Promise<T> {
 /** Monta a URL para onde mandamos a pessoa autorizar o app. */
 export function buildAuthorizeUrl(state: string): string {
   const params = new URLSearchParams({
-    client_id: env.instagramAppId,
+    client_id: env.metaAppId,
+    config_id: env.instagramConfigId,
     redirect_uri: `${env.appUrl}/api/oauth/callback`,
     response_type: "code",
-    scope: SCOPES,
+    display: "popup",
+    override_default_response_type: "true",
     state,
+    prompt: "login",
   });
-  return `https://www.instagram.com/oauth/authorize?${params.toString()}`;
+  return `https://www.facebook.com/dialog/oauth?${params.toString()}`;
 }
 
-/** Troca o "code" do callback por um token curto (~1h) + o user_id. */
-export async function exchangeCodeForShortToken(
+/** Troca o code do Unified Login por um business system-user access token. */
+export async function exchangeCodeForAccessToken(
   code: string,
-): Promise<{ access_token: string; user_id: string }> {
-  const form = new URLSearchParams({
-    client_id: env.instagramAppId,
-    client_secret: env.instagramAppSecret,
-    grant_type: "authorization_code",
-    redirect_uri: `${env.appUrl}/api/oauth/callback`,
+): Promise<{ access_token: string; token_type?: string; expires_in?: number }> {
+  const params = new URLSearchParams({
+    client_id: env.metaAppId,
+    client_secret: env.metaAppSecret,
     code,
   });
-  const res = await fetch("https://api.instagram.com/oauth/access_token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: form.toString(),
-  });
-  return parse(res);
-}
-
-/** Troca o token curto por um token longo de ~60 dias. */
-export async function exchangeShortForLongToken(
-  shortToken: string,
-): Promise<{ access_token: string; token_type: string; expires_in: number }> {
-  const params = new URLSearchParams({
-    grant_type: "ig_exchange_token",
-    client_secret: env.instagramAppSecret,
-    access_token: shortToken,
-  });
-  const res = await fetch(`${GRAPH_BASE}/access_token?${params.toString()}`);
-  return parse(res);
-}
-
-/** Renova o token longo (rodamos semanalmente pelo pg_cron). */
-export async function refreshLongToken(
-  longToken: string,
-): Promise<{ access_token: string; token_type: string; expires_in: number }> {
-  const params = new URLSearchParams({
-    grant_type: "ig_refresh_token",
-    access_token: longToken,
-  });
-  const res = await fetch(
-    `${GRAPH_BASE}/refresh_access_token?${params.toString()}`,
-  );
+  const res = await fetch(`${GRAPH_BASE}/oauth/access_token?${params.toString()}`);
   return parse(res);
 }
 
@@ -151,19 +114,21 @@ export async function refreshLongToken(
 // -------------------------------------------------------------------------
 
 export type IgProfile = {
-  user_id: string;
+  id: string;
   username: string;
   name?: string;
   profile_picture_url?: string;
 };
 
-/** Dados do perfil conectado. */
-export async function getMe(token: string): Promise<IgProfile> {
+/** Instagram assets shared with this app during Unified Login. */
+export async function getAssignedInstagramAccounts(
+  token: string,
+): Promise<{ data: IgProfile[] }> {
   const params = new URLSearchParams({
-    fields: "user_id,username,name,profile_picture_url",
+    fields: "id,username",
     access_token: token,
   });
-  const res = await fetch(`${GRAPH_BASE}/me?${params.toString()}`);
+  const res = await fetch(`${GRAPH_BASE}/me/assigned_instagram_accounts?${params.toString()}`);
   return parse(res);
 }
 

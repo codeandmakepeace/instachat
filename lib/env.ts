@@ -29,11 +29,15 @@ export const env = {
   get supabaseServiceRoleKey(): string {
     return required("SUPABASE_SERVICE_ROLE_KEY");
   },
-  get instagramAppId(): string {
-    return required("INSTAGRAM_APP_ID");
+  get metaAppId(): string {
+    // Keep the legacy variable names working for the already-configured Vercel project.
+    return process.env.META_APP_ID || required("INSTAGRAM_APP_ID");
   },
-  get instagramAppSecret(): string {
-    return required("INSTAGRAM_APP_SECRET");
+  get metaAppSecret(): string {
+    return process.env.META_APP_SECRET || required("INSTAGRAM_APP_SECRET");
+  },
+  get instagramConfigId(): string {
+    return process.env.INSTAGRAM_CONFIG_ID || "29414749628118152";
   },
   get webhookVerifyToken(): string {
     return required("WEBHOOK_VERIFY_TOKEN");

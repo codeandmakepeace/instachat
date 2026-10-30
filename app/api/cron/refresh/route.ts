@@ -1,6 +1,5 @@
 import { env } from "@/lib/env";
-import { getConnectedConfig, saveConfig } from "@/lib/config";
-import { refreshLongToken } from "@/lib/ig";
+import { getConnectedConfig } from "@/lib/config";
 
 export const runtime = "nodejs";
 
@@ -9,8 +8,9 @@ function authorized(req: Request): boolean {
 }
 
 /**
- * Renova o token longo (~60 dias). Chamado pelo pg_cron uma vez por semana.
- * Renovar cedo e com frequência evita o token expirar.
+ * Unified Login tokens are business system-user tokens. The old Instagram
+ * refresh_access_token endpoint does not apply; reconnect when the configured
+ * token expires until token management is implemented.
  */
 async function handle(req: Request) {
   if (!authorized(req)) return new Response("unauthorized", { status: 401 });
@@ -18,21 +18,11 @@ async function handle(req: Request) {
   const config = await getConnectedConfig();
   if (!config) return Response.json({ refreshed: false, reason: "sem_conexao" });
 
-  try {
-    const r = await refreshLongToken(config.access_token);
-    const expiresAt = new Date(Date.now() + r.expires_in * 1000).toISOString();
-    await saveConfig({
-      access_token: r.access_token,
-      token_expires_at: expiresAt,
-    });
-    return Response.json({ refreshed: true, expires_at: expiresAt });
-  } catch (e) {
-    console.error("refresh token falhou:", e);
-    return Response.json(
-      { refreshed: false, reason: "erro", detail: String(e) },
-      { status: 500 },
-    );
-  }
+  return Response.json({
+    refreshed: false,
+    reason: "unified_login_system_user_tokens_require_business_token_management_or_reconnect",
+    expires_at: config.token_expires_at,
+  });
 }
 
 export const POST = handle;

@@ -7,12 +7,12 @@ export const runtime = "nodejs";
 
 /**
  * Início do login: gera um `state` (anti-CSRF), guarda num cookie httpOnly e
- * manda a pessoa pra tela de autorização do Instagram.
+ * manda a pessoa para o login de negócios da Meta (Unified Login).
  */
 export async function GET() {
   // App da Meta ainda não configurado (self-host sem INSTAGRAM_APP_ID).
   // Em vez de estourar 500, volta ao painel com um aviso claro.
-  if (!process.env.INSTAGRAM_APP_ID || !process.env.INSTAGRAM_APP_SECRET) {
+  if (!(process.env.META_APP_ID || process.env.INSTAGRAM_APP_ID) || !(process.env.META_APP_SECRET || process.env.INSTAGRAM_APP_SECRET)) {
     return NextResponse.redirect(
       new URL("/painel?error=meta_nao_configurada", env.appUrl),
     );
